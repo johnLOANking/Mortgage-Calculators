@@ -12,7 +12,8 @@ I need to build a mortgage calculator widget that will be hosted on GitHub Pages
 6. URL parameters for pre-filling calculator fields
 7. Clear documentation and maintainability
 
-Instead of creating the solution immediately, please first interview me about:
+Instead of creating the solution immediately, please first interview me, by asking one question at a time and waiting for a response before asking the next question.
+The interview should be about:
 - The specific type of mortgage calculator I want to build
 - What inputs are required and which should be available via URL parameters
 - What outputs or results I need the calculator to display
