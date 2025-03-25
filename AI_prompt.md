@@ -1,6 +1,5 @@
 # Mortgage-Calculators
 
-Here's an improved prompt that incorporates URL parameters and creates an interview-style interaction:
 
 I need to build a mortgage calculator widget that will be hosted on GitHub Pages. Please help me create a comprehensive solution by asking me questions about my requirements. I want to incorporate:
 
@@ -25,6 +24,6 @@ The interview should be about:
 - Performance or SEO requirements
 - Any existing calculators I want to emulate or improve upon
 
-Once you understand my needs, please provide the complete code structure with explanations for implementing this as a GitHub Pages widget."
+Once you understand my needs, please provide the complete code structure with explanations for implementing this as a GitHub Pages widget.
 
-This prompt will ensure you get a tailored solution with URL parameter support, while the interview process will uncover all your specific requirements before any code is written.
+
