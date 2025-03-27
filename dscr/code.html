@@ -1,0 +1,462 @@
+<div class="row sectionBlockLayout sectionPrimaryColor text-left" style="display: flex; flex-wrap: wrap; height: 15px; padding: 8px; margin: 0px;"><div class="container" style="display: flex; flex-wrap: wrap;"></div></div>
+<div class="row sectionBlockLayout text-left" style="display: flex; flex-wrap: wrap; padding: 8px; margin: 0px; min-height: 361px;">
+  <div class="container" style="display: flex; flex-wrap: wrap;">
+    <div class="col-md-12 columnBlockLayout" style="flex-grow: 1; min-width: 250px; display: flex; flex-direction: column;">
+      <h1 style="text-align: center;">DSCR purchase calculator!</h1>
+      <p><br />• Start by filling out the required fields in the calculator. • Once all fields are completed, click on the 'Calculate' button. • Review the displayed numbers to ensure they meet your expectations. • If the numbers look good, enter the client’s name in the designated field. • Click on the button to create a custom URL with the provided terms. • Finally, click 'Copy' to copy the generated URL and email it to the borrower and/or realtor.</p>
+    </div>
+    <form id="dscr-form">
+    <div class="form-columns" style="display: flex; row-gap: 20px; column-gap: 20px;">
+      <!-- Left Column -->
+      <div class="column" style="flex-grow: 1; flex-shrink: 1; flex-basis: 0%;">
+        <!-- Purchase Price -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="purchase-price" style="display: block; margin-bottom: 5px;">Purchase Price ($):</label><input type="number" id="purchase-price" name="purchase-price" required="" /></div>
+        <!-- Down Payment percentage -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="down-payment-percent" style="display: block; margin-bottom: 5px;">Down Payment (%):</label><input type="number" id="down-payment-percent" name="down-payment-percent" min="20" max="100" required="" /></div>
+        <!-- Interest Rate -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="interest-rate" style="display: block; margin-bottom: 5px;">Annual Interest Rate (%):</label><input type="number" id="interest-rate" name="interest-rate" step="0.01" min="0" max="20" value="8" required="" /></div>
+        <!-- Term -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="term" style="display: block; margin-bottom: 5px;">Term (years):</label><input type="number" id="term" name="term" min="15" max="40" value="30" required="" /></div>
+      </div>
+      <!-- Middle Column -->
+      <div class="column" style="flex-grow: 1; flex-shrink: 1; flex-basis: 0%;">
+        <!-- Loan Amount -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="loan-amount" style="display: block; margin-bottom: 5px;">Loan Amount ($):</label><input type="number" id="loan-amount" name="loan-amount" /></div>
+        <!-- Down Payment dollars -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="down-payment-dollar" style="display: block; margin-bottom: 5px;">Down Payment ($):</label><input type="number" id="down-payment-dollar" name="down-payment-dollar" required="" /></div>
+        <!-- Interest Only checkbox -->
+        <div class="form-group" style="margin-bottom: 15px;">
+          <label for="interest-only" style="display: block; margin-bottom: 5px;">Interest Only:</label>
+          <div><input type="checkbox" id="interest-only" name="interest-only" /></div>
+        </div>
+        <!-- HOA -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="hoa" style="display: block; margin-bottom: 5px;">Monthly HOA ($):</label><input type="number" id="hoa" name="hoa" placeholder="Optional" /></div>
+      </div>
+      <!-- Right Column -->
+      <div class="column" style="flex-grow: 1; flex-shrink: 1; flex-basis: 0%;">
+        <!-- Rental Income -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="rental-income" style="display: block; margin-bottom: 5px;">Gross Monthly Rental Income ($):</label><input type="number" id="rental-income" name="rental-income" required="" /></div>
+        <!-- Insurance -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="insurance" style="display: block; margin-bottom: 5px;">Annual Insurance Premium ($):</label><input type="number" id="insurance" name="insurance" /></div>
+        <!-- Taxes -->
+        <div class="form-group" style="margin-bottom: 15px;"><label for="taxes" style="display: block; margin-bottom: 5px;">Annual Property Tax Premium ($):</label><input type="number" id="taxes" name="taxes" /></div>
+      </div>
+    </div>
+    <button type="button" onclick="calculateDSCR()">Calculate</button>
+  </form>
+  <div id="results"><!-- Results will be displayed here --></div>
+  <hr style="margin-top: 30px; margin-bottom: 30px; border-top: 1px solid #ccc;" />
+  <div id="url-generator">
+    <h3>Create Shareable Link</h3>
+    <div class="form-group" style="margin-bottom: 15px;"><label for="client-name" style="display: block; margin-bottom: 5px;">Client/Borrower Name:</label><input type="text" id="client-name" name="client-name" placeholder="Enter client name" /></div>
+    <button type="button" onclick="generateCustomUrl()">Create Custom URL with These Terms</button>
+    <div id="generated-url-container" style="display: none; margin-top: 20px;">
+      <p>Custom URL with your scenario:</p>
+      <div style="display: flex; margin-bottom: 10px;"><input type="text" id="generated-url" readonly="" style="flex-grow: 1; padding: 8px;" /><button type="button" onclick="copyToClipboard()" style="margin-left: 10px;">Copy to Clipboard</button></div>
+      <p id="copy-message" style="color: green; display: none;">URL copied to clipboard!</p>
+    </div>
+  </div>
+</div>
+<script>
+  // Default values and rates
+  const defaultInsuranceRate = 0.0035; // 0.35%
+  const defaultTaxRate = 0.0125;       // 1.25%
+  const defaultRate = 8;               // Default interest rate (%)
+  const defaultTerm = 30;              // Default term (years)
+
+  // Global variables
+  let updatingDP = false;
+  let userModifiedInsurance = false;
+  let userModifiedTaxes = false;
+  let currentInsuranceRate = defaultInsuranceRate;
+  let currentTaxRate = defaultTaxRate;
+
+  // Set initial placeholder text
+  document.addEventListener("DOMContentLoaded", function() {
+    const insuranceInput = document.getElementById('insurance');
+    const taxInput = document.getElementById('taxes');
+
+    // Set informative placeholders
+    insuranceInput.placeholder = `Will calculate at ${(defaultInsuranceRate * 100).toFixed(2)}% of price when entered`;
+    taxInput.placeholder = `Will calculate at ${(defaultTaxRate * 100).toFixed(2)}% of price when entered`;
+
+    // Setup event listeners for fields
+    setupFieldTracking();
+
+    // Attach event listeners to the down payment fields
+    document.getElementById('down-payment-percent').addEventListener('input', updateFromPercent);
+    document.getElementById('down-payment-dollar').addEventListener('input', updateFromDollar);
+    document.getElementById('loan-amount').addEventListener('input', updateFromLoan);
+
+    // Process URL parameters
+    processUrlParameters();
+  });
+
+  // Helper functions to update the three down payment/loan fields.
+  function updateFromPercent() {
+    if (updatingDP) return;
+    updatingDP = true;
+    const price = parseFloat(document.getElementById('purchase-price').value);
+    const dpPercent = parseFloat(document.getElementById('down-payment-percent').value);
+    if (!price || price <= 0 || isNaN(dpPercent)) { updatingDP = false; return; }
+    const dpDollar = price * dpPercent / 100;
+    const loan = price - dpDollar;
+    document.getElementById('down-payment-dollar').value = dpDollar.toFixed(2);
+    document.getElementById('loan-amount').value = loan.toFixed(2);
+    updatingDP = false;
+  }
+
+  function updateFromDollar() {
+    if (updatingDP) return;
+    updatingDP = true;
+    const price = parseFloat(document.getElementById('purchase-price').value);
+    const dpDollar = parseFloat(document.getElementById('down-payment-dollar').value);
+    if (!price || price <= 0 || isNaN(dpDollar)) { updatingDP = false; return; }
+    const dpPercent = (dpDollar / price) * 100;
+    const loan = price - dpDollar;
+    document.getElementById('down-payment-percent').value = dpPercent.toFixed(2);
+    document.getElementById('loan-amount').value = loan.toFixed(2);
+    updatingDP = false;
+  }
+
+  function updateFromLoan() {
+    if (updatingDP) return;
+    updatingDP = true;
+    const price = parseFloat(document.getElementById('purchase-price').value);
+    const loan = parseFloat(document.getElementById('loan-amount').value);
+    if (!price || price <= 0 || isNaN(loan)) { updatingDP = false; return; }
+    const dpDollar = price - loan;
+    const dpPercent = (dpDollar / price) * 100;
+    document.getElementById('down-payment-dollar').value = dpDollar.toFixed(2);
+    document.getElementById('down-payment-percent').value = dpPercent.toFixed(2);
+    updatingDP = false;
+  }
+
+  // Update insurance and taxes based on price and current rates
+  function updateInsuranceAndTaxes(newPrice) {
+    if (isNaN(newPrice) || newPrice <= 0) return;
+
+    const insuranceInput = document.getElementById('insurance');
+    const taxInput = document.getElementById('taxes');
+
+    // Update insurance with current rate (default or user-modified)
+    insuranceInput.value = (newPrice * currentInsuranceRate).toFixed(2);
+
+    // Update taxes with current rate (default or user-modified)
+    taxInput.value = (newPrice * currentTaxRate).toFixed(2);
+  }
+
+  // Track when user manually changes insurance or taxes
+  function setupFieldTracking() {
+    const insuranceInput = document.getElementById('insurance');
+    const taxInput = document.getElementById('taxes');
+    const priceInput = document.getElementById('purchase-price');
+
+    // When insurance is manually changed, calculate and store the new rate
+    insuranceInput.addEventListener('change', function() {
+      const price = parseFloat(priceInput.value);
+      if (!isNaN(price) && price > 0) {
+        const insuranceValue = parseFloat(this.value);
+        if (!isNaN(insuranceValue)) {
+          currentInsuranceRate = insuranceValue / price;
+          userModifiedInsurance = true;
+        }
+      }
+    });
+
+    // When taxes are manually changed, calculate and store the new rate
+    taxInput.addEventListener('change', function() {
+      const price = parseFloat(priceInput.value);
+      if (!isNaN(price) && price > 0) {
+        const taxValue = parseFloat(this.value);
+        if (!isNaN(taxValue)) {
+          currentTaxRate = taxValue / price;
+          userModifiedTaxes = true;
+        }
+      }
+    });
+
+    // When purchase price changes, update the down payment fields and recalculate taxes/insurance
+    priceInput.addEventListener('input', function() {
+      updateFromPercent();
+
+      const newPrice = parseFloat(this.value);
+      if (!isNaN(newPrice) && newPrice > 0) {
+        updateInsuranceAndTaxes(newPrice);
+      }
+    });
+  }
+
+  // Process URL parameters
+  function processUrlParameters() {
+    const params = new URLSearchParams(window.location.search);
+
+    // Process price parameter
+    if (params.has("price")) {
+      const price = parseFloat(params.get("price"));
+      if (!isNaN(price)) {
+        document.getElementById('purchase-price').value = price;
+      }
+    }
+
+    // Process other parameters
+    if (params.has("down")) {
+      const dp = parseFloat(params.get("down"));
+      if (!isNaN(dp)) {
+        document.getElementById('down-payment-percent').value = dp;
+      }
+    }
+
+    if (params.has("downDollar")) {
+      const dpDollar = parseFloat(params.get("downDollar"));
+      if (!isNaN(dpDollar)) {
+        document.getElementById('down-payment-dollar').value = dpDollar;
+      }
+    }
+
+    if (params.has("loan")) {
+      const loanVal = parseFloat(params.get("loan"));
+      if (!isNaN(loanVal)) {
+        document.getElementById('loan-amount').value = loanVal;
+      }
+    }
+
+    if (params.has("rate")) {
+      const rate = parseFloat(params.get("rate"));
+      if (!isNaN(rate)) {
+        document.getElementById('interest-rate').value = rate;
+      }
+    }
+
+    if (params.has("rents")) {
+      const rents = parseFloat(params.get("rents"));
+      if (!isNaN(rents)) {
+        document.getElementById('rental-income').value = rents;
+      }
+    }
+
+    if (params.has("term")) {
+      const term = parseInt(params.get("term"));
+      if (!isNaN(term)) {
+        document.getElementById('term').value = term;
+      }
+    }
+
+    if (params.has("hoa")) {
+      const hoa = parseFloat(params.get("hoa"));
+      if (!isNaN(hoa)) {
+        document.getElementById('hoa').value = hoa;
+      }
+    }
+
+    if (params.has("interestOnly")) {
+      const ioParam = params.get("interestOnly").toLowerCase();
+      if (ioParam === "true" || ioParam === "1") {
+        document.getElementById('interest-only').checked = true;
+      }
+    }
+
+    // Handle insurance and taxes with correct priority if price is provided
+    if (params.has("price")) {
+      const price = parseFloat(params.get("price"));
+      if (!isNaN(price) && price > 0) {
+        // Case 1: Handle taxes parameter
+        if (params.has("taxes")) {
+          const tax = parseFloat(params.get("taxes"));
+          if (!isNaN(tax)) {
+            document.getElementById('taxes').value = tax;
+            currentTaxRate = tax / price;
+            userModifiedTaxes = true;
+          }
+        } else {
+          // No taxes parameter - use default calculation
+          document.getElementById('taxes').value = (price * defaultTaxRate).toFixed(2);
+        }
+
+        // Case 2: Handle insurance parameter
+        if (params.has("insurance")) {
+          const ins = parseFloat(params.get("insurance"));
+          if (!isNaN(ins)) {
+            document.getElementById('insurance').value = ins;
+            currentInsuranceRate = ins / price;
+            userModifiedInsurance = true;
+          }
+        } else {
+          // No insurance parameter - use default calculation
+          document.getElementById('insurance').value = (price * defaultInsuranceRate).toFixed(2);
+        }
+      }
+    }
+
+    // Update down payment fields based on available data
+    if (params.has("loan")) {
+      updateFromLoan();
+    } else if (params.has("downDollar")) {
+      updateFromDollar();
+    } else if (params.has("down")) {
+      updateFromPercent();
+    }
+
+    // If the essential parameters are provided, auto-calculate
+    if (params.has("price") &&
+        (params.has("down") || params.has("downDollar") || params.has("loan")) &&
+        params.has("rents")) {
+      calculateDSCR();
+    }
+  }
+
+  // DSCR Calculation function
+  window.calculateDSCR = function() {
+    console.log("calculateDSCR function called.");
+
+    const purchasePrice = parseFloat(document.getElementById('purchase-price').value);
+    const dpPercent = parseFloat(document.getElementById('down-payment-percent').value);
+    const interestRateAnnual = parseFloat(document.getElementById('interest-rate').value);
+    const termYears = parseInt(document.getElementById('term').value);
+    const annualInsurance = parseFloat(document.getElementById('insurance').value);
+    const annualTaxes = parseFloat(document.getElementById('taxes').value);
+    const grossRentalIncome = parseFloat(document.getElementById('rental-income').value);
+    const hoaValue = document.getElementById('hoa').value;
+    const monthlyHOA = (hoaValue.trim() === "") ? 0 : parseFloat(hoaValue);
+
+    // Validation checks
+    if (isNaN(purchasePrice) || purchasePrice <= 0) {
+      alert("Please enter a valid purchase price.");
+      return;
+    }
+    if (isNaN(dpPercent) || dpPercent < 20) {
+      alert("Down payment must be at least 20%.");
+      return;
+    }
+    if (termYears < 15 || termYears > 40) {
+      alert("Term must be between 15 and 40 years. Please re-enter.");
+      return;
+    }
+    if (interestRateAnnual < 0 || interestRateAnnual > 20) {
+      alert("Interest rate must be between 0% and 20%. Please re-enter.");
+      return;
+    }
+
+    // Use the loan amount from the field
+    const loanAmount = parseFloat(document.getElementById('loan-amount').value);
+    if (isNaN(loanAmount)) {
+      alert("Loan amount is not valid.");
+      return;
+    }
+
+    // Calculate monthly interest rate and number of payments
+    const monthlyInterestRate = (interestRateAnnual / 100) / 12;
+    const numberOfPayments = termYears * 12;
+
+    // Determine if Interest Only is selected
+    const interestOnly = document.getElementById('interest-only').checked;
+    let monthlyMortgagePayment;
+    let mortgageLabel;
+
+    if (interestOnly) {
+      monthlyMortgagePayment = loanAmount * monthlyInterestRate;
+      mortgageLabel = "Monthly Mortgage Payment (Interest Only)";
+    } else {
+      if (monthlyInterestRate > 0) {
+        monthlyMortgagePayment = loanAmount *
+          (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, numberOfPayments)) /
+          (Math.pow(1 + monthlyInterestRate, numberOfPayments) - 1);
+      } else {
+        monthlyMortgagePayment = loanAmount / numberOfPayments;
+      }
+      mortgageLabel = "Monthly Mortgage Payment (P&I)";
+    }
+
+    const monthlyInsurance = annualInsurance / 12;
+    const monthlyTaxes = annualTaxes / 12;
+    const totalMonthlyPayment = monthlyMortgagePayment + monthlyInsurance + monthlyTaxes + monthlyHOA;
+    const dscr = grossRentalIncome / totalMonthlyPayment;
+
+    let qualificationMessage = "";
+    if (dscr < 0.75) {
+      qualificationMessage = "There is a chance we can do this deal, but it is the highest risk and highest cost. Try to put more down to get to at least .75 coverage (ideally over 1.0).";
+    } else if (dscr >= 1.25) {
+      qualificationMessage = "PERFECT! This DSCR ratio is as good as it gets!";
+    } else if (dscr >= 1.0) {
+      qualificationMessage = "These numbers work perfectly, but there is a chance you can get better terms if you can get over 1.25.";
+    } else {
+      qualificationMessage = "This deal may work, but it will be at a higher rate than normal. You may want to consider increasing your down payment.";
+    }
+
+    let hoaLine = (hoaValue.trim() !== "") ? `<p>Monthly HOA: ${monthlyHOA.toFixed(2)}</p>` : "";
+
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = `
+      <p class="highlight">DSCR: ${dscr.toFixed(2)} - ${qualificationMessage}</p>
+      <p>${mortgageLabel}: ${monthlyMortgagePayment.toFixed(2)}</p>
+      <p>Monthly Insurance: ${monthlyInsurance.toFixed(2)}</p>
+      <p>Monthly Property Taxes: ${monthlyTaxes.toFixed(2)}</p>
+      ${hoaLine}
+      <p class="large-text">Total Monthly Payment: ${totalMonthlyPayment.toFixed(2)}</p>
+    `;
+    console.log("DSCR calculation completed.");
+  };
+
+  // Generate custom URL with UTM parameters
+  window.generateCustomUrl = function() {
+    // Get all relevant field values
+    const purchasePrice = document.getElementById('purchase-price').value;
+    const downPaymentPercent = document.getElementById('down-payment-percent').value;
+    const downPaymentDollar = document.getElementById('down-payment-dollar').value;
+    const loanAmount = document.getElementById('loan-amount').value;
+    const interestRate = document.getElementById('interest-rate').value;
+    const term = document.getElementById('term').value;
+    const interestOnly = document.getElementById('interest-only').checked;
+    const rentalIncome = document.getElementById('rental-income').value;
+    const insurance = document.getElementById('insurance').value;
+    const taxes = document.getElementById('taxes').value;
+    const hoa = document.getElementById('hoa').value;
+
+    // Get client name for UTM campaign
+    const clientName = document.getElementById('client-name').value.trim() || 'unknown_client';
+    const encodedClientName = encodeURIComponent(clientName);
+
+    // Build base URL with calculator parameters
+    let url = 'https://www.canilandlord.com/dscr-calculator?';
+
+    // Add parameters if they have values
+    if (purchasePrice) url += `price=${purchasePrice}&`;
+    if (downPaymentPercent) url += `down=${downPaymentPercent}&`;
+    if (downPaymentDollar) url += `downDollar=${downPaymentDollar}&`;
+    if (loanAmount) url += `loan=${loanAmount}&`;
+    if (interestRate) url += `rate=${interestRate}&`;
+    if (term) url += `term=${term}&`;
+    if (interestOnly) url += 'interestOnly=1&';
+    if (rentalIncome) url += `rents=${rentalIncome}&`;
+    if (insurance) url += `insurance=${insurance}&`;
+    if (taxes) url += `taxes=${taxes}&`;
+    if (hoa) url += `hoa=${hoa}&`;
+
+    // Add UTM parameters
+    url += `utm_source=email&utm_medium=DSCR_purchase_calculator&utm_campaign=${encodedClientName}`;
+
+    // Display the generated URL
+    const urlField = document.getElementById('generated-url');
+    urlField.value = url;
+
+    // Show the URL container
+    document.getElementById('generated-url-container').style.display = 'block';
+  };
+
+  // Copy URL to clipboard
+  window.copyToClipboard = function() {
+    const urlField = document.getElementById('generated-url');
+    urlField.select();
+    document.execCommand('copy');
+
+    // Show success message
+    const copyMessage = document.getElementById('copy-message');
+    copyMessage.style.display = 'block';
+
+    // Hide message after 3 seconds
+    setTimeout(function() {
+      copyMessage.style.display = 'none';
+    }, 3000);
+  };
+</script>
+</div>
