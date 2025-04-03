@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max Refinance Loan Calculator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+            background-color: #f4f4f4;
+        }
+        .calculator {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Prevents padding from affecting width */
+        }
+        /* Style the percentage inputs slightly differently */
+        input[name="newRate"], input[name="maxFrontRatio"], input[name="maxBackRatio"] {
+             /* Indicate percentage */
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+         #result span {
+             color: #007bff;
+         }
+        .error {
+            color: red;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+         /* Input hint styling */
+        .input-hint {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 3px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator">
+    <h2>Maximum Refinance Loan Calculator</h2>
+
+    <div class="input-group">
+        <label for="monthlyIncome">Gross Monthly Income ($):</label>
+        <input type="number" id="monthlyIncome" name="monthlyIncome" step="any" required>
+    </div>
+
+    <div class="input-group">
+        <label for="monthlyDebts">Total Monthly Unpaid Debts ($):</label>
+         <input type="number" id="monthlyDebts" name="monthlyDebts" step="any" required value="0">
+         <span class="input-hint">Excludes current mortgage payment, but includes credit cards, student loans, car loans, etc.</span>
+    </div>
+
+    <div class="input-group">
+        <label for="monthlyTaxes">Estimated Monthly Property Taxes ($):</label>
+        <input type="number" id="monthlyTaxes" name="monthlyTaxes" step="any" required value="0">
+    </div>
+
+    <div class="input-group">
+        <label for="monthlyInsurance">Estimated Monthly Homeowner's Insurance ($):</label>
+        <input type="number" id="monthlyInsurance" name="monthlyInsurance" step="any" required value="0">
+    </div>
+
+    <div class="input-group">
+        <label for="monthlyHOA">Monthly HOA Dues ($) (if applicable):</label>
+        <input type="number" id="monthlyHOA" name="monthlyHOA" step="any" value="0">
+         <span class="input-hint">Enter 0 if not applicable.</span>
+    </div>
+
+    <hr style="margin: 20px 0;">
+
+    <div class="input-group">
+        <label for="newRate">New Estimated Interest Rate (%):</label>
+        <input type="number" id="newRate" name="newRate" step="any" required>
+        <span class="input-hint">Enter the annual rate, e.g., 6.5 for 6.5%.</span>
+    </div>
+
+    <div class="input-group">
+        <label for="maxFrontRatio">Max Front-End Ratio (%):</label>
+        <input type="number" id="maxFrontRatio" name="maxFrontRatio" step="any" required>
+         <span class="input-hint">Typically 28-36%. PITI / Gross Monthly Income.</span>
+    </div>
+
+     <div class="input-group">
+        <label for="maxBackRatio">Max Back-End Ratio (%):</label>
+        <input type="number" id="maxBackRatio" name="maxBackRatio" step="any" required>
+        <span class="input-hint">Typically 36-45%. (PITI + Other Debts) / Gross Monthly Income.</span>
+    </div>
+
+     <div class="input-group">
+        <label for="loanTerm">Loan Term (Years):</label>
+        <input type="number" id="loanTerm" name="loanTerm" step="1" required value="30">
+        <span class="input-hint">Commonly 15 or 30 years.</span>
+    </div>
+
+
+    <button onclick="calculateMaxLoan()">Calculate Max Loan Amount</button>
+
+    <div id="result" style="display: none;"></div>
+    <div id="error-message" class="error"></div>
+
+</div>
+
+<script>
+    function calculateMaxLoan() {
+        // --- Clear previous results/errors ---
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('error-message').textContent = '';
+
+        // --- Get Input Values ---
+        const monthlyIncome = parseFloat(document.getElementById('monthlyIncome').value);
+        const monthlyDebts = parseFloat(document.getElementById('monthlyDebts').value);
+        const monthlyTaxes = parseFloat(document.getElementById('monthlyTaxes').value);
+        const monthlyInsurance = parseFloat(document.getElementById('monthlyInsurance').value);
+        const monthlyHOA = parseFloat(document.getElementById('monthlyHOA').value) || 0; // Default HOA to 0 if empty
+        const newRate = parseFloat(document.getElementById('newRate').value);
+        const maxFrontRatio = parseFloat(document.getElementById('maxFrontRatio').value);
+        const maxBackRatio = parseFloat(document.getElementById('maxBackRatio').value);
+        const loanTermYears = parseInt(document.getElementById('loanTerm').value);
+
+        // --- Input Validation ---
+        let errors = [];
+        if (isNaN(monthlyIncome) || monthlyIncome <= 0) errors.push("Valid Monthly Income");
+        if (isNaN(monthlyDebts) || monthlyDebts < 0) errors.push("Valid Monthly Debts");
+        if (isNaN(monthlyTaxes) || monthlyTaxes < 0) errors.push("Valid Monthly Taxes");
+        if (isNaN(monthlyInsurance) || monthlyInsurance < 0) errors.push("Valid Monthly Insurance");
+        if (isNaN(monthlyHOA) || monthlyHOA < 0) errors.push("Valid Monthly HOA Dues");
+        if (isNaN(newRate) || newRate <= 0) errors.push("Valid New Interest Rate");
+        if (isNaN(maxFrontRatio) || maxFrontRatio <= 0 || maxFrontRatio > 100) errors.push("Valid Max Front-End Ratio (1-100)");
+        if (isNaN(maxBackRatio) || maxBackRatio <= 0 || maxBackRatio > 100) errors.push("Valid Max Back-End Ratio (1-100)");
+         if (isNaN(loanTermYears) || loanTermYears <= 0) errors.push("Valid Loan Term");
+
+
+        if (errors.length > 0) {
+            document.getElementById('error-message').textContent = "Please enter valid values for: " + errors.join(', ');
+            return;
+        }
+         if (maxFrontRatio > maxBackRatio) {
+             document.getElementById('error-message').textContent = "Front-End Ratio cannot be higher than Back-End Ratio.";
+             return;
+         }
+
+
+        // --- Calculations ---
+        const monthlyInterestRate = newRate / 100 / 12;
+        const numberOfPayments = loanTermYears * 12;
+        const ti = monthlyTaxes + monthlyInsurance + monthlyHOA; // Total Taxes, Insurance, HOA
+
+        // Max PITI based on Front-End Ratio
+        const maxPITI_Front = monthlyIncome * (maxFrontRatio / 100);
+
+        // Max PITI based on Back-End Ratio
+        const maxTotalDebt_Back = monthlyIncome * (maxBackRatio / 100);
+        const maxPITI_Back = maxTotalDebt_Back - monthlyDebts;
+
+        // Determine the limiting PITI (the lower of the two)
+        const limitingMaxPITI = Math.min(maxPITI_Front, maxPITI_Back);
+
+        // Calculate maximum allowable Principal & Interest (P&I)
+        const maxPandI = limitingMaxPITI - ti;
+
+        let maxLoanAmount = 0;
+        if (maxPandI > 0 && monthlyInterestRate > 0) {
+            // Standard loan formula: L = M * [1 - (1 + r)^-n] / r
+            maxLoanAmount = maxPandI * (1 - Math.pow(1 + monthlyInterestRate, -numberOfPayments)) / monthlyInterestRate;
+        } else if (maxPandI > 0 && monthlyInterestRate === 0) {
+            // Handle 0% interest rate (unlikely but mathematically possible)
+            maxLoanAmount = maxPandI * numberOfPayments;
+        } else {
+            // If max P&I is zero or negative, no loan is possible under these constraints
+            maxLoanAmount = 0;
+        }
+
+
+        // --- Display Result ---
+        const resultDiv = document.getElementById('result');
+        if (maxLoanAmount > 0) {
+             resultDiv.innerHTML = `Based on your inputs, the estimated maximum loan amount is: <span>$${maxLoanAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span> <br><small>(Based on a limiting PITI of $${limitingMaxPITI.toFixed(2)} and maximum P&I of $${maxPandI.toFixed(2)})</small>`;
+        } else {
+             resultDiv.innerHTML = `Based on your inputs and chosen ratios, you may not qualify for a refinance loan amount. The calculated maximum Principal & Interest payment is $${maxPandI.toFixed(2)}, which is too low. Try adjusting the ratios or reducing debts.`;
+        }
+        resultDiv.style.display = 'block';
+
+    }
+</script>
+
+</body>
+</html>
